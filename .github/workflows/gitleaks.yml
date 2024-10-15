@@ -1,0 +1,36 @@
+name: Gitleaks Secret Scan
+
+on:
+  push:
+    branches:
+      - main
+      - "feature/*"
+  pull_request:
+    branches:
+      - main
+      - "feature/*"
+
+jobs:
+  gitleaks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install Gitleaks
+        uses: zricethezav/gitleaks-action@v1.2.0
+
+      - name: Run Gitleaks
+        id: gitleaks
+        uses: zricethezav/gitleaks-action@v1.2.0
+        with:
+          config: ""
+          fail: true
+          report_path: gitleaks-report.json
+
+      - name: Upload Gitleaks Report
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: gitleaks-report
+          path: gitleaks-report.json
