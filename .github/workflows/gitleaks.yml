@@ -16,6 +16,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Fetches the entire commit history
 
       - name: Install Gitleaks
         uses: zricethezav/gitleaks-action@v1.2.0
