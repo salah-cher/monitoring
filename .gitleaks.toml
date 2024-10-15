@@ -1,0 +1,26 @@
+title = "Custom Gitleaks Configuration"
+description = "Custom configuration for detecting sensitive information."
+[[rules]]
+description = "Generic password"
+regex = '''(?i)(password|pwd|passwd)\s*:\s*\S+'''
+tags = ["password"]
+
+[[rules]]
+description = "Generic username"
+regex = '''(?i)(username|user)\s*:\s*\S+'''
+tags = ["username"]
+
+[[rules]]
+description = "API Key"
+regex = '''(?i)(api_key|apikey|auth_token|token)\s*=\s*\S+'''
+tags = ["api_key"]
+
+[[rules]]
+description = "AWS Secret Key"
+regex = '''(?i)(aws|aws_secret_access_key|secret_key)\s*=\s*\S+'''
+tags = ["aws"]
+
+[[rules]]
+description = "Basic Auth"
+regex = '''(?i)basic\s+\S+'''
+tags = ["basic_auth"]
