@@ -1,25 +1,34 @@
-# List of servers
-$servers = @("srv1", "srv2", "srv3", "srv4")
+param(
+    [string]$ServerListFile = ".\list-all-srv.txt"
+)
 
-# Check for pending Windows updates on each server
+# Define the current date and time for output file naming
+$currentDate = Get-Date -Format "yyyy-MM-dd_HH-mm-ss"
+$outputFile = ".\List-PendingUpdates_$currentDate.txt"
+
+# Ensure the server list file exists
+if (-Not (Test-Path $ServerListFile)) {
+    Write-Error "Server list file '$ServerListFile' not found!"
+    exit 1
+}
+
+# Read the server list
+$servers = Get-Content -Path $ServerListFile
+
+# List pending updates for each server
 foreach ($server in $servers) {
-    if (Test-Connection -ComputerName $server -Count 1 -Quiet) {
-        try {
-            $session = [activator]::CreateInstance([type]::GetTypeFromProgID("Microsoft.Update.Session",$server))
-            $updateSearcher = $session.CreateUpdateSearcher()
-            $searchResult = $updateSearcher.Search("IsInstalled=0")
-            if ($searchResult.Updates.Count -eq 0) {
-                Write-Host "${server}: No updates available"
-            } else {
-                Write-Host "${server}: Updates available"
-                foreach ($update in $searchResult.Updates) {
-                    Write-Host "${server} needs update: $($update.Title)"
-                }
-            }
-        } catch {
-            Write-Host "${server}: Unable to retrieve updates"
+    try {
+        $updates = Invoke-Command -ComputerName $server -ScriptBlock {
+            Get-WindowsUpdate -KBArticleID | Select-Object -ExpandProperty KBArticleID
         }
-    } else {
-        Write-Host "${server} is offline"
+        if ($updates) {
+            Write-Output "${server}: Pending updates: $($updates -join ', ')" | Tee-Object -FilePath $outputFile -Append
+        } else {
+            Write-Warning "${server}: No updates available" | Tee-Object -FilePath $outputFile -Append
+        }
+    } catch {
+        Write-Warning "${server}: Failed to retrieve updates" | Tee-Object -FilePath $outputFile -Append
     }
 }
+
+Write-Output "Results saved to: $outputFile"
