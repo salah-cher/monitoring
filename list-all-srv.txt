@@ -1,4 +1,4 @@
-srv1
-srv2
-srv3
-srv4
+srv1.hti1.local
+srv2.hti1.local
+srv3.hti2.local
+srv4.hti3.local
