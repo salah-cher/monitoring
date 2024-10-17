@@ -4,7 +4,7 @@ param(
 
 # Define the current date and time for output file naming
 $currentDate = Get-Date -Format "yyyy-MM-dd_HH-mm-ss"
-$outputFile = ".\Check-RDPAvailability_$currentDate.txt"
+#$outputFile = ".\Check-RDPAvailability_$currentDate.txt"
 
 # Ensure the server list file exists
 if (-Not (Test-Path $ServerListFile)) {
@@ -25,4 +25,4 @@ foreach ($server in $servers) {
     }
 }
 
-Write-Output "Results saved to: $outputFile"
+#Write-Output "Results saved to: $outputFile"

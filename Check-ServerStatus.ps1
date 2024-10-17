@@ -5,18 +5,18 @@ param (
 
 # Get the current date and time for the output file
 $currentDate = Get-Date -Format "yyyyMMdd_HHmmss"
-$outputFile = ".\Check-Server-Online_$currentDate.txt"  # Output file will also be in the current directory
+#$outputFile = ".\Check-Server-Online_$currentDate.txt"  # Output file will also be in the current directory
 
 # Read the list of servers from the file
 if (Test-Path $ServerListFile) {
     $servers = Get-Content -Path $ServerListFile
 } else {
     Write-Error "Server list file '$ServerListFile' not found!"
-    #exit
+    exit
 }
 
 # Create or clear the output file
-Out-File -FilePath $outputFile
+#Out-File -FilePath $outputFile
 
 # Iterate over each server and check if it's online
 foreach ($server in $servers) {
@@ -33,4 +33,4 @@ foreach ($server in $servers) {
     $status | Out-File -FilePath $outputFile -Append
 }
 
-Write-Output "Results have been saved to $outputFile"
+#Write-Output "Results have been saved to $outputFile"
