@@ -12,12 +12,19 @@ $credential = New-Object System.Management.Automation.PSCredential($U, $sp)
 # Read the list of servers from the file
 $servers = Get-Content -Path $ServerListFile
 
-# Define the path to the backup log directory
-$backupLogDirectory = "C$\GD\HTI\PBCS\20_ProdSys\23_RMAN\Log"
+# Get yesterday's date in the format used in the file names
+$yesterdayDate = (Get-Date).AddDays(-1).ToString("yyyyMMdd")
 
 # Loop through each server
 foreach ($server in $servers) {
     Write-Host "Checking server: $server"
+
+    # Adjust the log path for srv021
+    $backupLogDirectory = if ($server -eq "srv021") {
+        "C$\GD\HTI\PBCS\20_ProdSys\23_RMAN\log"
+    } else {
+        "C$\GD\HTI\PBCS\20_ProdSys\23_RMAN\Log"
+    }
 
     # Check if the server is online
     if (Test-Connection -ComputerName $server -Count 1 -Quiet) {
@@ -30,16 +37,32 @@ foreach ($server in $servers) {
         Try {
             New-PSDrive -Name "BKDrive" -PSProvider FileSystem -Root $networkPath -Credential $credential -ErrorAction Stop
 
-            # List the last 3 files in the folder, sorted by creation time descending
-            $lastThreeFiles = Get-ChildItem "BKDrive:\" | Sort-Object LastWriteTime -Descending | Select-Object -First 3
+            # Define file patterns for yesterday's date
+            $filePatterns = @(
+                "DB1P_BACKUP_DISK_DAILY_${yesterdayDate}_*.log",
+                "DB2_BACKUP_DISK_DAILY_${yesterdayDate}_*.log",
+                "DB2_BACKUP_TAPE_DAILY_${yesterdayDate}_*.log",
+                "DB2_BACKUP_TAPE_WEEKLY_${yesterdayDate}_*.log"
+            )
 
-            if ($lastThreeFiles) {
-                Write-Host "$server: Last 3 backup files in $backupLogDirectory:"
-                $lastThreeFiles | ForEach-Object {
-                    Write-Host $_.Name
+            $foundFiles = $false
+
+            # Loop through each pattern to list the last 3 files if found
+            foreach ($pattern in $filePatterns) {
+                $files = Get-ChildItem "BKDrive:\" -Filter $pattern | Sort-Object LastWriteTime -Descending | Select-Object -First 3
+
+                if ($files) {
+                    Write-Host "$server: Backup files matching pattern '$pattern':"
+                    $files | ForEach-Object {
+                        Write-Host $_.Name
+                    }
+                    $foundFiles = $true
                 }
-            } else {
-                Write-Host "$server: No backup files found in $backupLogDirectory."
+            }
+
+            # If no files were found with any of the patterns
+            if (-not $foundFiles) {
+                Write-Host "$server: No matching backup files found for yesterday."
             }
 
             # Remove the PSDrive after use
