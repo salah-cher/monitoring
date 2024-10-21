@@ -30,7 +30,7 @@ Try {
 #    "###############################################################################" | Tee-Object -FilePath $outputFile -Append
 #   .\Check-WindowsUpdateStatus.ps1 *>&1 | Tee-Object -FilePath $outputFile -Append
 
-    Write-Host "All scripts executed successfully. Results are saved in $outputFile."
+Write-Host "All scripts executed successfully. Results are saved in $outputFile."
 }
 Catch {
     Write-Host "An error occurred: $_" | Tee-Object -FilePath $outputFile -Append
