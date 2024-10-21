@@ -17,14 +17,20 @@ Try {
     "###                          RDP AVAILABILITY CHECK                         ###" | Tee-Object -FilePath $outputFile -Append
     "###############################################################################" | Tee-Object -FilePath $outputFile -Append
     .\Check-RDPAvailability.ps1 *>&1 | Tee-Object -FilePath $outputFile -Append
-    
-    Write-Host "Running Check-WindowsUpdateStatus..."
-    "###############################################################################" | Tee-Object -FilePath $outputFile -Append
-    "###                      WINDOWS UPDATE STATUS CHECK                        ###" | Tee-Object -FilePath $outputFile -Append
-    "###############################################################################" | Tee-Object -FilePath $outputFile -Append
-    .\Check-WindowsUpdateStatus.ps1 *>&1 | Tee-Object -FilePath $outputFile -Append
 
-    Write-Host "All scripts executed successfully. Results are saved in $outputFile."
+    Write-Host "Running List-PendingUpdates..."
+    "###############################################################################" | Tee-Object -FilePath $outputFile -Append
+    "###                         LIST PENDING UPDATES                            ###" | Tee-Object -FilePath $outputFile -Append
+    "###############################################################################" | Tee-Object -FilePath $outputFile -Append
+    .\List-PendingUpdates.ps1 *>&1 | Tee-Object -FilePath $outputFile -Append
+
+#    Write-Host "Running Check-WindowsUpdateStatus..."
+#    "###############################################################################" | Tee-Object -FilePath $outputFile -Append
+#    "###                      WINDOWS UPDATE STATUS CHECK                        ###" | Tee-Object -FilePath $outputFile -Append
+#    "###############################################################################" | Tee-Object -FilePath $outputFile -Append
+#   .\Check-WindowsUpdateStatus.ps1 *>&1 | Tee-Object -FilePath $outputFile -Append
+
+Write-Host "All scripts executed successfully. Results are saved in $outputFile."
 }
 Catch {
     Write-Host "An error occurred: $_" | Tee-Object -FilePath $outputFile -Append

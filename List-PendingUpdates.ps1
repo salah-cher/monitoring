@@ -1,5 +1,9 @@
-# List of servers from file
-$ServerListFile = ".\list-all-srv.txt"
+# Define parameter for server list with a default value
+param (
+    [string]$ServerListFile = ".\list-all-srv.txt"
+)
+
+# Read the list of servers from the file
 $servers = Get-Content -Path $ServerListFile
 
 # Timeout in seconds
@@ -28,11 +32,17 @@ foreach ($server in $servers) {
                 }
             }
 
-            # Display the search result if not timed out
+            # Display only updates with titles starting with "KB"
             if ($searchResult -and $searchResult.Updates.Count -gt 0) {
-                Write-Host "${server}: Updates available"
-                foreach ($update in $searchResult.Updates) {
-                    Write-Host "$server needs update: $($update.Title)"
+                $kbUpdates = $searchResult.Updates | Where-Object { $_.Title -match "^KB" }
+                
+                if ($kbUpdates.Count -gt 0) {
+                    Write-Host "${server}: Major updates available"
+                    foreach ($update in $kbUpdates) {
+                        Write-Host "$server needs update: $($update.Title)"
+                    }
+                } else {
+                    Write-Host "${server}: No major updates (KB...) available"
                 }
             } elseif ($searchResult -and $searchResult.Updates.Count -eq 0) {
                 Write-Host "${server}: No updates available"
