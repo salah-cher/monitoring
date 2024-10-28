@@ -88,6 +88,3 @@ To run the combined results script with a specific server list file:
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
-```
-
-You can copy this updated README content and push it to your repository. Let me know if you need any further adjustments!
