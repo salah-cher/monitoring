@@ -5,7 +5,7 @@ $htmlOutputFile = "Combined-Results_$(Get-Date -Format 'yyyyMMdd_HHmmss').html"
 # Write a header to the output file
 "--- Combined Results - $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') ---" | Out-File -FilePath $outputFile
 
-# Initialize the HTML file with basic structure
+# Initialize the HTML file with basic
 @"
 <!DOCTYPE html>
 <html>
