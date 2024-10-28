@@ -1,4 +1,3 @@
-```markdown
 # Monitoring Scripts
 
 This repository contains PowerShell scripts for monitoring Windows-based workstations and servers. The scripts perform various checks such as server status, RDP availability, and pending updates. The results are output to both text and HTML files for easy viewing.
