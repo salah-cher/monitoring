@@ -1,31 +1,94 @@
-# Server Monitoring and Windows Update Checker
+```markdown
+# Monitoring Scripts
 
-This repository provides PowerShell scripts to help automate the process of checking server status, remote desktop availability, and pending Windows updates. These scripts were designed to streamline the manual process of checking multiple Windows servers for updates and online availability.
+This repository contains PowerShell scripts for monitoring Windows-based workstations and servers. The scripts perform various checks such as server status, RDP availability, and pending updates. The results are output to both text and HTML files for easy viewing.
 
-## Prerequisites
-- Ensure that PowerShell remoting is enabled for all servers.
-- The user running these scripts must have appropriate privileges to access the servers and retrieve Windows Update information.
+## Scripts
 
-## Scripts Overview:
+### Check-ServerStatus.ps1
 
-### 1. `Check-ServerStatus.ps1`
-This script checks if the specified list of servers is online using `Test-Connection`.
+This script checks the status of servers listed in a specified file.
 
-### 2. `Check-RDPAvailability.ps1`
-This script checks whether port 3389 (RDP) is open for each server.
+#### Parameters
 
-### 3. `Check-WindowsUpdateStatus.ps1`
-This script checks if the Windows Update service (`wuauserv`) is running on each server.
+- `ServerListFile`: Path to the file containing the list of servers. Default is `.\list-srv.txt`.
 
-### 4. `List-PendingUpdates.ps1`
-This script retrieves a list of pending Windows updates for each online server.
+#### Usage
 
-## How to Run:
-1. Open PowerShell with administrator privileges.
-2. Navigate to the folder containing the scripts.
-3. Execute the scripts using:
-   ```powershell
-   ./Check-ServerStatus.ps1
-   ./Check-RDPAvailability.ps1
-   ./Check-WindowsUpdateStatus.ps1
-   ./List-PendingUpdates.ps1
+```powershell
+.\Check-ServerStatus.ps1 -ServerListFile .\list-all-srv.txt
+```
+
+### Check-RDPAvailability.ps1
+
+This script checks the RDP availability of servers listed in a specified file.
+
+#### Parameters
+
+- `ServerListFile`: Path to the file containing the list of servers. Default is `.\list-srv.txt`.
+
+#### Usage
+
+```powershell
+.\Check-RDPAvailability.ps1 -ServerListFile .\list-all-srv.txt
+```
+
+### List-PendingUpdates.ps1
+
+This script lists the pending updates for servers listed in a specified file.
+
+#### Parameters
+
+- `ServerListFile`: Path to the file containing the list of servers. Default is `.\list-srv.txt`.
+
+#### Usage
+
+```powershell
+.\List-PendingUpdates.ps1 -ServerListFile .\list-all-srv.txt
+```
+
+### Combined-Results.ps1
+
+This script runs the above scripts and outputs the results to both a text file and an HTML file.
+
+#### Parameters
+
+- `ServerListFile`: Path to the file containing the list of servers. Default is `.\list-all-srv.txt`.
+
+#### Usage
+
+```powershell
+.\Combined-Results.ps1 -ServerListFile .\list-all-srv.txt
+```
+
+## Output
+
+The results are saved in two formats:
+
+1. **Text File**: A timestamped text file containing the combined results of all checks.
+2. **HTML File**: A timestamped HTML file with sections for each check. Errors and warnings are highlighted in red and yellow, respectively.
+
+### Example Output
+
+- `Combined-Results_YYYYMMDD_HHMMSS.txt`
+- `Combined-Results_YYYYMMDD_HHMMSS.html`
+
+## Example
+
+To run the combined results script with a specific server list file:
+
+```powershell
+.\Combined-Results.ps1 -ServerListFile .\list-all-srv.txt
+```
+
+## Notes
+
+- Ensure that the server list files are correctly formatted and accessible.
+- Run the scripts with appropriate permissions to access the servers and perform the checks.
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+```
+
+You can copy this updated README content and push it to your repository. Let me know if you need any further adjustments!
