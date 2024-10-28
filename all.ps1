@@ -5,7 +5,7 @@ $htmlOutputFile = "Combined-Results_$(Get-Date -Format 'yyyyMMdd_HHmmss').html"
 # Write a header to the output file
 "--- Combined Results - $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') ---" | Out-File -FilePath $outputFile
 
-# Initialize the HTML file
+# HTML file 
 @"
 <!DOCTYPE html>
 <html>
@@ -17,6 +17,8 @@ $htmlOutputFile = "Combined-Results_$(Get-Date -Format 'yyyyMMdd_HHmmss').html"
         h1 { color: #333; }
         pre { background-color: #f4f4f4; padding: 10px; border: 1px solid #ddd; }
         .section { margin-bottom: 20px; }
+        .error { color: red; font-weight: bold; }
+        .warning { color: orange; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -46,8 +48,35 @@ function Append-Output {
         <h2>$sectionTitle</h2>
         <pre>
 "@ | Out-File -FilePath $htmlOutputFile -Append -Encoding utf8
-    & $scriptPath -ServerListFile $serverListFile *>&1 | Out-File -FilePath $htmlOutputFile -Append -Encoding utf8
+
+    $output = & $scriptPath -ServerListFile $serverListFile *>&1
+    foreach ($line in $output) {
+        if ($line -match "offline" -or $line -match "RDP is not available" -or $line -match "Unable to retrieve updates") {
+            "<span class='error'>$line</span>" | Out-File -FilePath $htmlOutputFile -Append -Encoding utf8
+        } elseif ($line -match "No updates available") {
+            "<span class='warning'>$line</span>" | Out-File -FilePath $htmlOutputFile -Append -Encoding utf8
+        } else {
+            "$line" | Out-File -FilePath $htmlOutputFile -Append -Encoding utf8
+        }
+    }
+
     "</pre></div>" | Out-File -FilePath $htmlOutputFile -Append -Encoding utf8
+}
+
+# Function to append error or warning messages to HTML file
+function Append-ErrorOrWarning {
+    param (
+        [string]$message,
+        [string]$type  # "error" or "warning"
+    )
+
+    $class = if ($type -eq "error") { "error" } else { "warning" }
+
+    @"
+    <div class='$class'>
+        <pre>$message</pre>
+    </div>
+"@ | Out-File -FilePath $htmlOutputFile -Append -Encoding utf8
 }
 
 # Define the server list file
@@ -72,12 +101,7 @@ Try {
 }
 Catch {
     Write-Host "An error occurred: $_" | Tee-Object -FilePath $outputFile -Append
-    @"
-    <div class='section'>
-        <h2>Error</h2>
-        <pre>$_</pre>
-    </div>
-"@ | Out-File -FilePath $htmlOutputFile -Append -Encoding utf8
+    Append-ErrorOrWarning -message $_ -type "error"
 }
 
 # Close the HTML file
