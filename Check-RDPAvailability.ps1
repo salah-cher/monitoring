@@ -2,10 +2,6 @@ param(
     [string]$ServerListFile = ".\list-all-srv.txt"
 )
 
-# Define the current date and time for output file naming
-$currentDate = Get-Date -Format "yyyy-MM-dd_HH-mm-ss"
-#$outputFile = ".\Check-RDPAvailability_$currentDate.txt"
-
 # Ensure the server list file exists
 if (-Not (Test-Path $ServerListFile)) {
     Write-Error "Server list file '$ServerListFile' not found!"
@@ -17,12 +13,17 @@ $servers = Get-Content -Path $ServerListFile
 
 # Check RDP availability for each server
 foreach ($server in $servers) {
-    $rdpTest = Test-NetConnection -ComputerName $server -Port 3389 -InformationLevel Quiet
-    if ($rdpTest) {
-        Write-Output "${server}: RDP is available" | Tee-Object -FilePath $outputFile -Append
+    # Test if the server is online
+    if (Test-Connection -ComputerName $server -Count 1 -Quiet) {
+        # If the server is online, test the RDP connection
+        $rdpTest = Test-NetConnection -ComputerName $server -Port 3389 -InformationLevel Quiet
+        if ($rdpTest) {
+            Write-Output "${server}: RDP is available"
+        } else {
+            Write-Warning "${server}: RDP is not available"
+        }
     } else {
-        Write-Warning "${server}: RDP is not available" | Tee-Object -FilePath $outputFile -Append
+        # If the server is offline, output a message indicating no RDP connection
+        Write-Warning "${server}: Server is offline - NO RDP connection"
     }
 }
-
-#Write-Output "Results saved to: $outputFile"
