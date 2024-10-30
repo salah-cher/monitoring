@@ -1,11 +1,24 @@
-# Define the output file paths with a timestamp for uniqueness
-$outputFile = "Combined-Results_$(Get-Date -Format 'yyyyMMdd_HHmmss').txt"
-$htmlOutputFile = "Combined-Results_$(Get-Date -Format 'yyyyMMdd_HHmmss').html"
+param (
+    [string]$serverListPath = "list-all-srv.txt",
+    [string]$csvFilePath = "scripts-config.csv",
+    [switch]$VerboseOutput
+)
+
+# Define the timestamp for folder and file names
+$timestamp = Get-Date -Format 'yyyyMMdd_HHmmss'
+$outputFolder = "Results_$timestamp"
+
+# Create the output folder
+New-Item -ItemType Directory -Path $outputFolder
+
+# Define the output file paths with the timestamp for uniqueness
+$outputFile = "$outputFolder/Combined-Results_$timestamp.txt"
+$htmlOutputFile = "$outputFolder/Combined-Results_$timestamp.html"
 
 # Write a header to the output file
 "--- Combined Results - $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') ---" | Out-File -FilePath $outputFile
 
-# HTML file 
+# HTML file
 @"
 <!DOCTYPE html>
 <html>
@@ -30,37 +43,43 @@ function Append-Output {
     param (
         [string]$sectionTitle,
         [string]$scriptPath,
-        [string]$serverListFile
+        [string]$serverListFile,
+        [bool]$fileOutput,
+        [bool]$htmlOutput
     )
 
     $banner = "###############################################################################"
     $header = "###                           $sectionTitle                           ###"
     
-    # Append to text file
-    $banner | Tee-Object -FilePath $outputFile -Append
-    $header | Tee-Object -FilePath $outputFile -Append
-    $banner | Tee-Object -FilePath $outputFile -Append
-    & $scriptPath -ServerListFile $serverListFile *>&1 | Tee-Object -FilePath $outputFile -Append
-
-    # Append to HTML file
-    @"
-    <div class='section'>
-        <h2>$sectionTitle</h2>
-        <pre>
-"@ | Out-File -FilePath $htmlOutputFile -Append -Encoding utf8
-
-    $output = & $scriptPath -ServerListFile $serverListFile *>&1
-    foreach ($line in $output) {
-        if ($line -match "offline" -or $line -match "RDP is not available" -or $line -match "Unable to retrieve updates") {
-            "<span class='error'>$line</span>" | Out-File -FilePath $htmlOutputFile -Append -Encoding utf8
-        } elseif ($line -match "No updates available") {
-            "<span class='warning'>$line</span>" | Out-File -FilePath $htmlOutputFile -Append -Encoding utf8
-        } else {
-            "$line" | Out-File -FilePath $htmlOutputFile -Append -Encoding utf8
-        }
+    if ($fileOutput) {
+        # Append to text file
+        $banner | Tee-Object -FilePath $outputFile -Append
+        $header | Tee-Object -FilePath $outputFile -Append
+        $banner | Tee-Object -FilePath $outputFile -Append
+        & $scriptPath -ServerListFile $serverListFile *>&1 | Tee-Object -FilePath $outputFile -Append
     }
 
-    "</pre></div>" | Out-File -FilePath $htmlOutputFile -Append -Encoding utf8
+    if ($htmlOutput) {
+        # Append to HTML file
+        @"
+        <div class='section'>
+            <h2>$sectionTitle</h2>
+            <pre>
+"@ | Out-File -FilePath $htmlOutputFile -Append -Encoding utf8
+
+        $output = & $scriptPath -ServerListFile $serverListFile *>&1
+        foreach ($line in $output) {
+            if ($line -match "offline" -or $line -match "RDP is not available" -or $line -match "Unable to retrieve updates") {
+                "<span class='error'>$line</span>" | Out-File -FilePath $htmlOutputFile -Append -Encoding utf8
+            } elseif ($line -match "No updates available") {
+                "<span class='warning'>$line</span>" | Out-File -FilePath $htmlOutputFile -Append -Encoding utf8
+            } else {
+                "$line" | Out-File -FilePath $htmlOutputFile -Append -Encoding utf8
+            }
+        }
+
+        "</pre></div>" | Out-File -FilePath $htmlOutputFile -Append -Encoding utf8
+    }
 }
 
 # Function to append error or warning messages to HTML file
@@ -80,29 +99,29 @@ function Append-ErrorOrWarning {
 }
 
 # Define the server list file
-$serverListFile = ".\list-all-srv.txt"
+$serverListFile = $serverListPath
+
+# Read the CSV file
+$scripts = Import-Csv -Path $csvFilePath
 
 # Run each script and append both output and errors to the files with banners for separation
-Try {
-    Write-Host "Running Check-ServerStatus..."
-    Append-Output -sectionTitle "SERVER STATUS CHECK" -scriptPath ".\Check-ServerStatus.ps1" -serverListFile $serverListFile
+foreach ($script in $scripts) {
+    $scriptName = $script.'Script Name'
+    $scriptDescription = $script.'Script Description'
+    $fileOutput = [bool]::Parse($script.'File output')
+    $htmlOutput = [bool]::Parse($script.'HTML output')
 
-    Write-Host "Running Check-RDPAvailability..."
-    Append-Output -sectionTitle "RDP AVAILABILITY CHECK" -scriptPath ".\Check-RDPAvailability.ps1" -serverListFile $serverListFile
-
-    Write-Host "Running List-PendingUpdates..."
-    Append-Output -sectionTitle "LIST PENDING UPDATES" -scriptPath ".\List-PendingUpdates.ps1" -serverListFile $serverListFile
-
-    # Uncomment the following lines if you want to include Check-WindowsUpdateStatus
-    # Write-Host "Running Check-WindowsUpdateStatus..."
-    # Append-Output -sectionTitle "WINDOWS UPDATE STATUS CHECK" -scriptPath ".\Check-WindowsUpdateStatus.ps1" -serverListFile $serverListFile
-
-    Write-Host "All scripts executed successfully. Results are saved in $outputFile and $htmlOutputFile."
-}
-Catch {
-    Write-Host "An error occurred: $_" | Tee-Object -FilePath $outputFile -Append
-    Append-ErrorOrWarning -message $_ -type "error"
+    Try {
+        Write-Host "Running $scriptDescription..."
+        Append-Output -sectionTitle $scriptDescription -scriptPath ".\$scriptName" -serverListFile $serverListFile -fileOutput $fileOutput -htmlOutput $htmlOutput
+    }
+    Catch {
+        Write-Host "An error occurred while running ${scriptName}: $_" | Tee-Object -FilePath $outputFile -Append
+        Append-ErrorOrWarning -message $_ -type "error"
+    }
 }
 
 # Close the HTML file
 "</body></html>" | Out-File -FilePath $htmlOutputFile -Append -Encoding utf8
+
+Write-Host "All scripts executed successfully. Results are saved in $outputFile and $htmlOutputFile."
