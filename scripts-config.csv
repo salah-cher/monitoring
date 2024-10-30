@@ -1,0 +1,4 @@
+Script Name,Script Description,File output,HTML output
+Check-ServerStatus.ps1, Check if Server is Online using ping,true,true
+Check-RDPAvailability.ps1, Check if RDP is running and can access the server with RDP,true,true
+List-PendingUpdates-V2.ps1,List pending KB updates,true,true
