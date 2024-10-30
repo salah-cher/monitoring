@@ -1,19 +1,24 @@
 param (
     [string]$serverListPath = "list-all-srv.txt",
-    [switch]$VerboseOutput  = $true
+    [switch]$VerboseOutput
 )
 
 # Define the list of servers
 $servers = Get-Content -Path $serverListPath
 
 # Define the default credentials
-$defaultU = "aaaaa"
-$defaultP = "aaaaaaaaaaaaaaa"
+$defaultU = "aaa"
+$defaultP = "aaaaaaa"
 
 # Define the specific credentials for certain servers
 $specificC = @{
-    "srv111" = "aaaaaaaaaaaaa"
-    "PP0000" = "aaaaaaaaaaaaaaaaaaaa"
+    "srv111" = "aaaa"
+    "PP0000" = "aaaaaaaaaaaa"
+}
+
+# Define the specific usn for certain servers
+$specificU = @{
+    "PP0000" = "aaaaaaaaaaaaaa"
 }
 
 # Function to check if a server is online
@@ -22,6 +27,28 @@ function Test-ServerOnline {
         [string]$server
     )
     Test-Connection -ComputerName $server -Count 1 -Quiet
+}
+
+# Function to check internet connectivity
+function Test-InternetConnectivity {
+    param (
+        [string]$server,
+        [string]$UsrN,
+        [string]$Pd
+    )
+    $securePd = ConvertTo-SecureString $Pd -AsPlainText -Force
+    $credential = New-Object System.Management.Automation.PSCredential ($UsrN, $securePd)
+    try {
+        $result = Invoke-Command -ComputerName $server -Credential $credential -ScriptBlock {
+            Test-Connection -ComputerName "www.google.com" -Count 1 -Quiet
+        } -ErrorAction Stop
+        return $result
+    } catch {
+        if ($VerboseOutput) {
+            Write-Warning "${server}: Error testing internet connectivity - $_"
+        }
+        return $false
+    }
 }
 
 # Function to get the last time Windows updates were applied
@@ -58,12 +85,18 @@ foreach ($server in $servers) {
     if (Test-ServerOnline -server $server) {
         if ($specificC.ContainsKey($server)) {
             $Pd = $specificC[$server]
+            $UsrN = $specificU[$server]  # Use specific usn if available
         } else {
             $Pd = $defaultP
+            $UsrN = $defaultU
         }
-        $lastUpdate = Get-LastUpdateTime -server $server -UsrN $defaultU -Pd $Pd
-        if ($lastUpdate) {
-            Write-Output "${server}: Last update applied on $($lastUpdate.InstalledOn)"
+        if (Test-InternetConnectivity -server $server -UsrN $UsrN -Pd $Pd) {
+            $lastUpdate = Get-LastUpdateTime -server $server -UsrN $UsrN -Pd $Pd
+            if ($lastUpdate) {
+                Write-Output "${server}: Last update applied on $($lastUpdate.InstalledOn)"
+            }
+        } else {
+            Write-Output "${server}: Online but NO internet connectivity"
         }
     } else {
         Write-Output "$server is offline, skipping..."
