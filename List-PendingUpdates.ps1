@@ -1,6 +1,7 @@
 # List of servers from file
 param (
-  [string]$ServerListFile = ".\list-all-srv.txt"  # Default value
+  [string]$ServerListFile = ".\list-all-srv.txt",  # Default value
+  [string]$CredentialsFile = ".\credentials.json"  # Default value
 )
 
 # Read the list of servers from the file
@@ -10,8 +11,7 @@ $servers = Get-Content -Path $ServerListFile
 $timeoutSeconds = 60
 
 # Function to read credentials from JSON file
-function Get-CredentialsFromJSON($serverName) {
-  $credentialsFile = ".\credentials.json"  # Path to your JSON file
+function Get-CredentialsFromJSON($serverName, $credentialsFile) {
   try {
     # Read JSON content
     $jsonData = Get-Content -Path $credentialsFile | ConvertFrom-Json
@@ -46,7 +46,7 @@ foreach ($server in $servers) {
     $startTime = [datetime]::Now
     try {
       # Get credentials from JSON
-      $credentials = Get-CredentialsFromJSON $server
+      $credentials = Get-CredentialsFromJSON $server $CredentialsFile
 
       if ($credentials) {
         $session = [activator]::CreateInstance([type]::GetTypeFromProgID("Microsoft.Update.Session", $server, $credentials))
