@@ -1,5 +1,5 @@
 param (
-    [string]$serverListPath = "list-all-srv.txt",
+    [string]$serverListPath = "list-srv.txt",
     [string]$csvFilePath = "scripts-config.csv",
     [switch]$VerboseOutput
 )
@@ -32,6 +32,7 @@ $htmlOutputFile = "$outputFolder/Combined-Results_$timestamp.html"
         .section { margin-bottom: 20px; }
         .error { color: red; font-weight: bold; }
         .warning { color: orange; font-weight: bold; }
+        .backup-file { color: blue; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -73,6 +74,8 @@ function Append-Output {
                 "<span class='error'>$line</span>" | Out-File -FilePath $htmlOutputFile -Append -Encoding utf8
             } elseif ($line -match "No updates available") {
                 "<span class='warning'>$line</span>" | Out-File -FilePath $htmlOutputFile -Append -Encoding utf8
+            } elseif ($line -match "^\w+_BACKUP_.*\.log$") {
+                "<span class='backup-file'>$line</span>" | Out-File -FilePath $htmlOutputFile -Append -Encoding utf8
             } else {
                 "$line" | Out-File -FilePath $htmlOutputFile -Append -Encoding utf8
             }
@@ -110,6 +113,13 @@ foreach ($script in $scripts) {
     $scriptDescription = $script.'Script Description'
     $fileOutput = [bool]::Parse($script.'File output')
     $htmlOutput = [bool]::Parse($script.'HTML output')
+
+    # Check for special case
+    if ($scriptName -eq "find-bk-file.ps1") {
+        $serverListFile = "list-bk-srv.txt"
+    } else {
+        $serverListFile = $serverListPath
+    }
 
     Try {
         Write-Host "Running $scriptDescription..."
