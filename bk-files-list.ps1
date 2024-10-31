@@ -1,19 +1,23 @@
-# Define the list of servers file and set a default value
 param (
     [string]$ServerListFile = ".\list-bk-srv.txt",
-    [string]$Usr = "aaaaaaaaa",  # Replace with your Usr
-    [string]$Psw = "aaaaaaaaaaaaaa"   # Replace with your Psw
+    [string]$CredentialsPath = "credentials.json"
 )
 
-# Convert Psw to a secure string and create a PSCredential object
-$securePsw = ConvertTo-SecureString $Psw -AsPlainText -Force
-$credential = New-Object System.Management.Automation.PSCredential($Usr, $securePsw)
+# Read the JSON file
+$jsonContent = Get-Content -Raw -Path $CredentialsPath
+$credentials = $jsonContent | ConvertFrom-Json
 
-# Special credentials for srv111
-$specialUsr = "aaaaaaaaaaaaa"
-$specialPsw = "aaaaaaaaaaaaaaaaaaaa"
-$specialSecurePsw = ConvertTo-SecureString $specialPsw -AsPlainText -Force
-$specialCredential = New-Object System.Management.Automation.PSCredential($specialUsr, $specialSecurePsw)
+# Function to get credentials for a server
+function Get-Credentials {
+    param (
+        [string]$server
+    )
+    $credential = $credentials.credentials | Where-Object { $_.server -eq $server }
+    if (-not $credential) {
+        $credential = $credentials.credentials | Where-Object { $_.server -eq "default" }
+    }
+    return $credential
+}
 
 # Read the list of servers from the file
 $servers = Get-Content -Path $ServerListFile
@@ -39,8 +43,12 @@ foreach ($server in $servers) {
         # Define the network path
         $networkPath = "\\$server\$backupLogDirectory"
 
-        # Determine which credential to use
-        $currentCredential = if ($server -eq "srv111.htipbcs11.local") { $specialCredential } else { $credential }
+        # Get the credentials for the current server
+        $credential = Get-Credentials -server $server
+        $Usr = $credential.username
+        $Psw = $credential.password
+        $securePsw = ConvertTo-SecureString $Psw -AsPlainText -Force
+        $currentCredential = New-Object System.Management.Automation.PSCredential($Usr, $securePsw)
 
         # Try to map the network path with credentials
         Try {
