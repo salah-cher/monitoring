@@ -1,5 +1,5 @@
 param (
-    [string]$serverListPath = "list-srv.txt",
+    [string]$serverListFile = "list-all-srv.txt",
     [string]$csvFilePath = "scripts-config.csv",
     [switch]$VerboseOutput
 )
@@ -50,14 +50,14 @@ function Append-Output {
     )
 
     $banner = "###############################################################################"
-    $header = "###                           $sectionTitle                           ###"
+    $header = "###                           $sectionTitle      ###"
     
     if ($fileOutput) {
         # Append to text file
         $banner | Tee-Object -FilePath $outputFile -Append
         $header | Tee-Object -FilePath $outputFile -Append
         $banner | Tee-Object -FilePath $outputFile -Append
-        & $scriptPath -ServerListFile $serverListFile *>&1 | Tee-Object -FilePath $outputFile -Append
+        & $scriptPath -serverListFile $serverListFile *>&1 | Tee-Object -FilePath $outputFile -Append
     }
 
     if ($htmlOutput) {
@@ -68,7 +68,7 @@ function Append-Output {
             <pre>
 "@ | Out-File -FilePath $htmlOutputFile -Append -Encoding utf8
 
-        $output = & $scriptPath -ServerListFile $serverListFile *>&1
+        $output = & $scriptPath -serverListFile $serverListFile *>&1
         foreach ($line in $output) {
             if ($line -match "offline" -or $line -match "RDP is not available" -or $line -match "Unable to retrieve updates") {
                 "<span class='error'>$line</span>" | Out-File -FilePath $htmlOutputFile -Append -Encoding utf8
@@ -102,7 +102,7 @@ function Append-ErrorOrWarning {
 }
 
 # Define the server list file
-$serverListFile = $serverListPath
+$serverListFile = $serverListFile
 
 # Read the CSV file
 $scripts = Import-Csv -Path $csvFilePath
@@ -118,7 +118,7 @@ foreach ($script in $scripts) {
     if ($scriptName -eq "find-bk-file.ps1") {
         $serverListFile = "list-bk-srv.txt"
     } else {
-        $serverListFile = $serverListPath
+        $serverListFile = $serverListFile
     }
 
     Try {
