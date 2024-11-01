@@ -1,34 +1,88 @@
-param(
-    [string]$ServerListFile = ".\list-all-srv.txt"
+param (
+    [string]$serverListFile = "",
+    [string]$credentialsPath = "credentials.json",
+    [switch]$VerboseOutput
 )
 
-# Define the current date and time for output file naming
-$currentDate = Get-Date -Format "yyyy-MM-dd_HH-mm-ss"
-#$outputFile = ".\Check-WindowsUpdateStatus_$currentDate.txt"
+# Define the list of servers
+$servers = Get-Content -Path $serverListFile
 
-# Ensure the server list file exists
-if (-Not (Test-Path $ServerListFile)) {
-    Write-Error "Server list file '$ServerListFile' not found!"
-    exit 1
+# Read the JSON file
+$jsonContent = Get-Content -Raw -Path $credentialsPath
+$credentials = $jsonContent | ConvertFrom-Json
+
+# Function to get credentials for a server
+function Get-Credentials {
+    param (
+        [string]$server
+    )
+    $credential = $credentials.credentials | Where-Object { $_.server -eq $server }
+    if (-not $credential) {
+        $credential = $credentials.credentials | Where-Object { $_.server -eq "default" }
+    }
+    return $credential
 }
 
-# Read the server list
-$servers = Get-Content -Path $ServerListFile
+# Function to check if a server is online
+function Test-ServerOnline {
+    param (
+        [string]$server
+    )
+    Test-Connection -ComputerName $server -Count 1 -Quiet
+}
 
-# Check Windows Update status for each server
-foreach ($server in $servers) {
+# Function to check Windows Update service status
+function Get-WindowsUpdateServiceStatus {
+    param (
+        [string]$server,
+        [string]$UsrN,
+        [string]$Pd
+    )
+    $securePd = ConvertTo-SecureString $Pd -AsPlainText -Force
+    $credential = New-Object System.Management.Automation.PSCredential ($UsrN, $securePd)
+    
     try {
-        $wuStatus = Invoke-Command -ComputerName $server -ScriptBlock {
-            (Get-Service -Name wuauserv).Status
-        }
-        if ($wuStatus -eq 'Running') {
-            Write-Output "${server}: Windows Update service is running" | Tee-Object -FilePath $outputFile -Append
-        } else {
-            Write-Warning "${server}: Windows Update service is not running" | Tee-Object -FilePath $outputFile -Append
-        }
+        $serviceStatus = Invoke-Command -ComputerName $server -Credential $credential -ScriptBlock {
+            # Get Windows Update service details
+            $service = Get-Service -Name "wuauserv" -ErrorAction Stop
+            
+            # Return service details as a hashtable
+            @{
+                ServiceName = $service.Name
+                Status = $service.Status.ToString()
+                StartType = $service.StartType.ToString()
+                DisplayName = $service.DisplayName
+            }
+        } -ErrorAction Stop
+        
+        return $serviceStatus
     } catch {
-        Write-Warning "${server}: Failed to retrieve Windows Update status" | Tee-Object -FilePath $outputFile -Append
+        if ($VerboseOutput) {
+            Write-Warning "${server}: Error checking Windows Update service - $_"
+        }
+        return $null
     }
 }
 
-#Write-Output "Results saved to: $outputFile"
+# Loop through each server and check Windows Update service status
+foreach ($server in $servers) {
+    if (Test-ServerOnline -server $server) {
+        $credential = Get-Credentials -server $server
+        $UsrN = $credential.username
+        $Pd = $credential.password
+        
+        $serviceStatus = Get-WindowsUpdateServiceStatus -server $server -UsrN $UsrN -Pd $Pd
+        
+        if ($serviceStatus) {
+            Write-Output "${server}: Windows Update Service Status"
+            Write-Output "  Name: $($serviceStatus.ServiceName)"
+            Write-Output "  Status: $($serviceStatus.Status)"
+            Write-Output "  Start Type: $($serviceStatus.StartType)"
+            Write-Output "  Display Name: $($serviceStatus.DisplayName)"
+        } else {
+            Write-Output "${server}: Unable to retrieve Windows Update service status"
+        }
+    } else {
+        Write-Output "$server is offline, skipping..."
+    }
+}
