@@ -1,90 +1,92 @@
 # Monitoring Scripts
 
-This repository contains PowerShell scripts for monitoring Windows-based workstations and servers. The scripts perform various checks such as server status, RDP availability, and pending updates. The results are output to both text and HTML files for easy viewing.
+This repository contains PowerShell scripts for monitoring Windows-based servers and workstations. Each script performs specific checks, with results saved to both text and HTML files. The main script, `all.ps1`, calls individual scripts for streamlined monitoring.
 
-## Scripts
+## Table of Contents
+- [Scripts Overview](#scripts-overview)
+  - [Check-ServerStatus.ps1](#check-serverstatusps1)
+  - [Check-RDPAvailability.ps1](#check-rdpavailabilityps1)
+  - [List-PendingUpdates.ps1](#list-pendingupdatesps1)
+  - [Check-WindowsUpdateStatus.ps1](#check-windowsupdatestatusps1)
+  - [last-WU-Applied.ps1](#last-wu-appliedps1)
+  - [Last-WindowsUpdate.ps1](#last-windowsupdateps1) *(Note: Duplicate of last-WU-Applied.ps1)*
+- [Caller Script](#caller-script)
+- [Notes](#notes)
+- [License](#license)
+
+## Scripts Overview
 
 ### Check-ServerStatus.ps1
+Checks if each server listed in a specified file is online.
 
-This script checks the status of servers listed in a specified file.
-
-#### Parameters
-
-- `ServerListFile`: Path to the file containing the list of servers. Default is `.\list-srv.txt`.
-
-#### Usage
-
-```powershell
-.\Check-ServerStatus.ps1 -ServerListFile .\list-all-srv.txt
-```
+- **Parameters**:
+  - `ServerListFile` (string): Path to the file containing server names (default: `.\list-all-srv.txt`).
+- **Usage**:
+  ```powershell
+  .\Check-ServerStatus.ps1 -ServerListFile .\list-all-srv.txt
+  ```
 
 ### Check-RDPAvailability.ps1
+Verifies if Remote Desktop Protocol (RDP) is available for each server.
 
-This script checks the RDP availability of servers listed in a specified file.
-
-#### Parameters
-
-- `ServerListFile`: Path to the file containing the list of servers. Default is `.\list-srv.txt`.
-
-#### Usage
-
-```powershell
-.\Check-RDPAvailability.ps1 -ServerListFile .\list-all-srv.txt
-```
+- **Parameters**:
+  - `ServerListFile` (string): Path to the server list (default: `.\list-rdp-srv.txt`).
+- **Usage**:
+  ```powershell
+  .\Check-RDPAvailability.ps1 -ServerListFile .\list-rdp-srv.txt
+  ```
 
 ### List-PendingUpdates.ps1
+Lists major pending updates (identified by “KB” numbers) for each server.
 
-This script lists the pending updates for servers listed in a specified file.
+- **Parameters**:
+  - `ServerListFile` (string): Path to the server list.
+  - `OutputFile` (string, optional): Destination file for the output.
+- **Usage**:
+  ```powershell
+  .\List-PendingUpdates.ps1 -ServerListFile .\list-update-srv.txt
+  ```
 
-#### Parameters
+### Check-WindowsUpdateStatus.ps1
+Checks for any Windows updates on specified servers and outputs a status report.
 
-- `ServerListFile`: Path to the file containing the list of servers. Default is `.\list-srv.txt`.
+- **Parameters**:
+  - `ServerListFile` (string): Path to the server list.
+- **Usage**:
+  ```powershell
+  .\Check-WindowsUpdateStatus.ps1 -ServerListFile .\list-all-srv.txt
+  ```
 
-#### Usage
+### last-WU-Applied.ps1
+Displays the last Windows Update applied on each server from a specified list.
 
-```powershell
-.\List-PendingUpdates.ps1 -ServerListFile .\list-all-srv.txt
-```
+- **Parameters**:
+  - `ServerListFile` (string): Path to the server list.
+- **Usage**:
+  ```powershell
+  .\last-WU-Applied.ps1 -ServerListFile .\list-wu-srv.txt
+  ```
 
-### Combined-Results.ps1
+### Last-WindowsUpdate.ps1
+**(Note: This script is a duplicate of last-WU-Applied.ps1. Consider removing or consolidating.)**
 
-This script runs the above scripts and outputs the results to both a text file and an HTML file.
+## Caller Script
 
-#### Parameters
+### all.ps1
+Combines all scripts in this repository, executing them sequentially and saving output to `combined_output.txt` and `combined_output.html`.
 
-- `ServerListFile`: Path to the file containing the list of servers. Default is `.\list-all-srv.txt`.
-
-#### Usage
-
-```powershell
-.\Combined-Results.ps1 -ServerListFile .\list-all-srv.txt
-```
-
-## Output
-
-The results are saved in two formats:
-
-1. **Text File**: A timestamped text file containing the combined results of all checks.
-2. **HTML File**: A timestamped HTML file with sections for each check. Errors and warnings are highlighted in red and yellow, respectively.
-
-### Example Output
-
-- `Combined-Results_YYYYMMDD_HHMMSS.txt`
-- `Combined-Results_YYYYMMDD_HHMMSS.html`
-
-## Example
-
-To run the combined results script with a specific server list file:
-
-```powershell
-.\Combined-Results.ps1 -ServerListFile .\list-all-srv.txt
-```
+- **Usage**:
+  ```powershell
+  .\all.ps1
+  ```
 
 ## Notes
-
-- Ensure that the server list files are correctly formatted and accessible.
-- Run the scripts with appropriate permissions to access the servers and perform the checks.
+- Ensure each script runs with appropriate permissions, especially for network or remote monitoring tasks.
+- If using across domains, update credentials in the respective scripts.
 
 ## License
+This repository is licensed under the MIT License.
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+--- 
+
+Let me know if you’d like further customization!
