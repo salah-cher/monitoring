@@ -30,7 +30,7 @@ foreach ($server in $servers) {
     Write-Host "Checking server: $server"
 
     # Adjust the log path for srv021 and srv111
-    $backupLogDirectory = if ($server -eq "srv021.htipbcs2.local" -or $server -eq "srv111.htipbcs11.local") {
+    $backupLogDirectory = if ($server -eq "srv021.htipbcs2.local" -or $server -eq "srv111.htipbcs11.local" -or $server -eq "srv14.htipbcs1.local") {
         "C$\GD\HTI\PBCS\20_ProdSys\23_RMAN\Log"
     } else {
         "C$\GD\HTI\PBCS\20_ProdSys\23_RMAN\log"
