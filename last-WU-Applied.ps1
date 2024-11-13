@@ -1,24 +1,32 @@
-param (
-    [string]$serverListPath = "list-all-srv.txt",
+param(
+    [string]$serverListFile = "list-all-srv.txt",
+    [string]$credentialsPath = "credentials.json",
     [switch]$VerboseOutput
 )
 
-# Define the list of servers
-$servers = Get-Content -Path $serverListPath
-
-# Define the default credentials
-$defaultU = "aaa"
-$defaultP = "aaaaaaa"
-
-# Define the specific credentials for certain servers
-$specificC = @{
-    "srv111" = "aaaa"
-    "PP0000" = "aaaaaaaaaaaa"
+# Ensure the server list file exists
+if (-Not (Test-Path $serverListFile)) {
+    Write-Error "Server list file '$serverListFile' not found!"
+    exit 1
 }
 
-# Define the specific usn for certain servers
-$specificU = @{
-    "PP0000" = "aaaaaaaaaaaaaa"
+# Read the server list
+$servers = Get-Content -Path $serverListFile
+
+# Read the JSON file
+$jsonContent = Get-Content -Raw -Path $credentialsPath
+$credentials = $jsonContent | ConvertFrom-Json
+
+# Function to get credentials for a server
+function Get-Credentials {
+    param (
+        [string]$server
+    )
+    $credential = $credentials.credentials | Where-Object { $_.server -eq $server }
+    if (-not $credential) {
+        $credential = $credentials.credentials | Where-Object { $_.server -eq "default" }
+    }
+    return $credential
 }
 
 # Function to check if a server is online
@@ -83,13 +91,10 @@ function Get-LastUpdateTime {
 # Loop through each server and check the last update time
 foreach ($server in $servers) {
     if (Test-ServerOnline -server $server) {
-        if ($specificC.ContainsKey($server)) {
-            $Pd = $specificC[$server]
-            $UsrN = $specificU[$server]  # Use specific usn if available
-        } else {
-            $Pd = $defaultP
-            $UsrN = $defaultU
-        }
+        $credential = Get-Credentials -server $server
+        $UsrN = $credential.username
+        $Pd = $credential.password
+        
         if (Test-InternetConnectivity -server $server -UsrN $UsrN -Pd $Pd) {
             $lastUpdate = Get-LastUpdateTime -server $server -UsrN $UsrN -Pd $Pd
             if ($lastUpdate) {
