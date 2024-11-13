@@ -120,22 +120,17 @@ function Check-DiskUsage {
     $credential = New-Object System.Management.Automation.PSCredential ($Usr, $securePsw)
     try {
         $disks = Invoke-Command -ComputerName $server -Credential $credential -ScriptBlock {
-            Get-WmiObject -Class Win32_LogicalDisk -Filter "DriveType=3" | Select-Object DeviceID, Size, FreeSpace
+            Get-WmiObject -Class Win32_LogicalDisk -Filter "DriveType=3" | Where-Object { $_.DriveType -eq 3 } | Select-Object DeviceID, Size, FreeSpace
         } -ErrorAction Stop
 
         foreach ($disk in $disks) {
             $usedSpace = [math]::round((($disk.Size - $disk.FreeSpace) / $disk.Size) * 100, 2)
             $freeSpace = [math]::round(($disk.FreeSpace / $disk.Size) * 100, 2)
-            if ($usedSpace -lt 80) {
-                Write-Host "$server - $($disk.DeviceID): Used Space: $usedSpace%, Free Space: $freeSpace%" -ForegroundColor Green
-            } elseif ($usedSpace -ge 80 -and $usedSpace -lt 90) {
-                Write-Host "$server - $($disk.DeviceID): Used Space: $usedSpace%, Free Space: $freeSpace%" -ForegroundColor Yellow
-            } else {
-                Write-Host "$server - $($disk.DeviceID): Used Space: $usedSpace%, Free Space: $freeSpace%" -ForegroundColor Red
-            }
+            $class = if ($usedSpace -lt 80) { "ok" } elseif ($usedSpace -ge 80 -and $usedSpace -lt 90) { "warning" } else { "critical" }
+            Write-Output "<div class='$class'>$server - $($disk.DeviceID): Used Space: $usedSpace%, Free Space: $freeSpace%</div>"
         }
     } catch {
-        Write-Host "${server}: Error - Cannot list disks" -ForegroundColor Red
+        Write-Output "<div class='error'>${server}: Error - Cannot list disks</div>"
     }
 }
 
@@ -147,6 +142,6 @@ foreach ($server in $servers) {
         $Psw = $credential.password
         Check-DiskUsage -server $server -Usr $Usr -Psw $Psw
     } else {
-        Write-Warning "$server is offline. Skipping disk usage check."
+        Write-Output "<div class='warning'>$server is offline. Skipping disk usage check.</div>"
     }
 }
