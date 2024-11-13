@@ -104,3 +104,49 @@ foreach ($server in $servers) {
         Write-Warning "$server is offline."
     }
 }
+
+# New section: Check disk usage
+Write-Host "###############################################################################"
+Write-Host "###                           Section 2 - Checking Disk Usage               ###"
+Write-Host "###############################################################################"
+
+function Check-DiskUsage {
+    param (
+        [string]$server,
+        [string]$Usr,
+        [string]$Psw
+    )
+    $securePsw = ConvertTo-SecureString $Psw -AsPlainText -Force
+    $credential = New-Object System.Management.Automation.PSCredential ($Usr, $securePsw)
+    try {
+        $disks = Invoke-Command -ComputerName $server -Credential $credential -ScriptBlock {
+            Get-WmiObject -Class Win32_LogicalDisk -Filter "DriveType=3" | Select-Object DeviceID, Size, FreeSpace
+        } -ErrorAction Stop
+
+        foreach ($disk in $disks) {
+            $usedSpace = [math]::round((($disk.Size - $disk.FreeSpace) / $disk.Size) * 100, 2)
+            $freeSpace = [math]::round(($disk.FreeSpace / $disk.Size) * 100, 2)
+            if ($usedSpace -lt 80) {
+                Write-Host "$server - $($disk.DeviceID): Used Space: $usedSpace%, Free Space: $freeSpace%" -ForegroundColor Green
+            } elseif ($usedSpace -ge 80 -and $usedSpace -lt 90) {
+                Write-Host "$server - $($disk.DeviceID): Used Space: $usedSpace%, Free Space: $freeSpace%" -ForegroundColor Yellow
+            } else {
+                Write-Host "$server - $($disk.DeviceID): Used Space: $usedSpace%, Free Space: $freeSpace%" -ForegroundColor Red
+            }
+        }
+    } catch {
+        Write-Host "${server}: Error - Cannot list disks" -ForegroundColor Red
+    }
+}
+
+# Loop through each server to check disk usage
+foreach ($server in $servers) {
+    if (Test-Connection -ComputerName $server -Count 1 -Quiet) {
+        $credential = Get-Credentials -server $server
+        $Usr = $credential.username
+        $Psw = $credential.password
+        Check-DiskUsage -server $server -Usr $Usr -Psw $Psw
+    } else {
+        Write-Warning "$server is offline. Skipping disk usage check."
+    }
+}
