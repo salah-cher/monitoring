@@ -104,3 +104,44 @@ foreach ($server in $servers) {
         Write-Warning "$server is offline."
     }
 }
+
+# New section: Check disk usage
+Write-Host "###############################################################################"
+Write-Host "###                           Section 2 - Checking Disk Usage               ###"
+Write-Host "###############################################################################"
+
+function Check-DiskUsage {
+    param (
+        [string]$server,
+        [string]$Usr,
+        [string]$Psw
+    )
+    $securePsw = ConvertTo-SecureString $Psw -AsPlainText -Force
+    $credential = New-Object System.Management.Automation.PSCredential ($Usr, $securePsw)
+    try {
+        $disks = Invoke-Command -ComputerName $server -Credential $credential -ScriptBlock {
+            Get-WmiObject -Class Win32_LogicalDisk -Filter "DriveType=3" | Where-Object { $_.DriveType -eq 3 } | Select-Object DeviceID, Size, FreeSpace
+        } -ErrorAction Stop
+
+        foreach ($disk in $disks) {
+            $usedSpace = [math]::round((($disk.Size - $disk.FreeSpace) / $disk.Size) * 100, 2)
+            $freeSpace = [math]::round(($disk.FreeSpace / $disk.Size) * 100, 2)
+            $class = if ($usedSpace -lt 80) { "ok" } elseif ($usedSpace -ge 80 -and $usedSpace -lt 90) { "warning" } else { "critical" }
+            Write-Output "<div class='$class'>$server - $($disk.DeviceID): Used Space: $usedSpace%, Free Space: $freeSpace%</div>"
+        }
+    } catch {
+        Write-Output "<div class='error'>${server}: Error - Cannot list disks</div>"
+    }
+}
+
+# Loop through each server to check disk usage
+foreach ($server in $servers) {
+    if (Test-Connection -ComputerName $server -Count 1 -Quiet) {
+        $credential = Get-Credentials -server $server
+        $Usr = $credential.username
+        $Psw = $credential.password
+        Check-DiskUsage -server $server -Usr $Usr -Psw $Psw
+    } else {
+        Write-Output "<div class='warning'>$server is offline. Skipping disk usage check.</div>"
+    }
+}
