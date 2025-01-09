@@ -1,0 +1,43 @@
+{
+    "log_files": [
+        {
+            "name": "Alert Log",
+            "path": "C:\\app\\Administrator\\diag\\rdbms\\db1p\\db1\\trace\\alert_db1.log"
+        },
+        {
+            "name": "Listener Log",
+            "path": "C:\\app\\Administrator\\diag\\tnslsnr\\srv011\\listener\\trace\\listener.log"
+        },
+        {
+            "name": "Trace Files",
+            "path": "C:\\app\\Administrator\\diag\\rdbms\\db1p\\db1\\trace\\"
+        },
+        {
+            "name": "Archive Logs",
+            "path": "C:\\app\\Administrator\\dbs or the flash recovery area"
+        },
+        {
+            "name": "Data Pump Logs",
+            "path": "directory specified by the DIRECTORY parameter used in the Data Pump job"
+        },
+        {
+            "name": "Enterprise Manager Logs",
+            "path": "C:\\app\\Administrator\\sysman\\log"
+        }
+    ],
+    "keywords": {
+        "errors": [
+            "ORA-",
+            "ERROR",
+            "FATAL",
+            "CRITICAL",
+            "SEVERE"
+        ],
+        "warnings": [
+            "WARNING",
+            "ORA-W",
+            "ALERT",
+            "NOTICE"
+        ]
+    }
+}
