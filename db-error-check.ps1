@@ -1,11 +1,12 @@
 # Load the JSON configuration file
-$config = Get-Content -Path "c:\users\administrator\desktop\sch_db_scripts\oracle_log_config.json" -Raw | ConvertFrom-Json
+$config = Get-Content -Path "c:\\users\\administrator\\desktop\\sch_db_scripts\\oracle_log_config.json" -Raw | ConvertFrom-Json
 
-# Function to search for the first 10 keywords in a log file
+# Function to search for the first 10 keywords in a log file and save results to a file
 function Search-LogFile {
     param (
         [string]$LogFilePath,
-        [array]$Keywords
+        [array]$Keywords,
+        [string]$OutputFilePath
     )
 
     if (Test-Path $LogFilePath) {
@@ -17,17 +18,15 @@ function Search-LogFile {
             $matches = $logContent | Select-String -Pattern $keyword
             foreach ($match in $matches) {
                 # Check if the log entry has a timestamp and is within the last week
-                if ($match.Line -match '\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}') {
+                if ($match.Line -match '\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}') {
                     $timestamp = [datetime]::ParseExact($matches.Matches[0].Value, 'yyyy-MM-dd HH:mm:ss', $null)
                     if ($timestamp -ge $oneWeekAgo) {
-                        Write-Output "Found '$keyword' in $LogFilePath on ${timestamp}:"
-                        Write-Output $match.Line
+                        Add-Content -Path $OutputFilePath -Value "Found '$keyword' in $LogFilePath on $timestamp:`n$($match.Line)`n"
                         $foundCount++
                     }
                 } else {
                     # If no timestamp, assume the entry is recent
-                    Write-Output "Found '$keyword' in ${LogFilePath}:"
-                    Write-Output $match.Line
+                    Add-Content -Path $OutputFilePath -Value "Found '$keyword' in $LogFilePath:`n$($match.Line)`n"
                     $foundCount++
                 }
 
@@ -38,15 +37,19 @@ function Search-LogFile {
             }
         }
     } else {
-        Write-Output "Log file not found: $LogFilePath"
+        Add-Content -Path $OutputFilePath -Value "Log file not found: $LogFilePath`n"
     }
 }
 
-# Loop through the log files and search for errors and warnings within the last week
+# Get current date and time for naming the output file
+$currentDateTime = Get-Date -Format "yyyy-MM-dd_HH-mm"
+
+# Loop through the log files and search for errors and warnings within the last week, saving results to a file
 foreach ($logFile in $config.log_files) {
     Write-Output "Checking log file: $($logFile.name)"
-    Search-LogFile -LogFilePath $logFile.path -Keywords $config.keywords.errors
-    Search-LogFile -LogFilePath $logFile.path -Keywords $config.keywords.warnings
+    $outputFileName = "$($logFile.name)_$currentDateTime.txt"
+    Search-LogFile -LogFilePath $logFile.path -Keywords $config.keywords.errors -OutputFilePath $outputFileName
+    Search-LogFile -LogFilePath $logFile.path -Keywords $config.keywords.warnings -OutputFilePath $outputFileName
 }
 
 Write-Output "Log file check completed."
